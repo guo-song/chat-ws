@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<style>
+    /* p:nth-child(2n) {
+        background-color: #fff;
+    }
+
+    p:nth-child(2n-1) {
+        background-color: #eee;
+    } */
+
+    input,
+    button {
+        outline: none;
+    }
+
+    .input {
+        position: fixed;
+        left: 0;
+        bottom: 0;
+        width: 100%;
+        height: 200px;
+    }
+
+    #btn {
+        width: 500px;
+        height: 100px;
+        border: 1px solid rgb(16, 229, 236);
+        border-radius: 4px;
+    }
+
+    #send {
+        height: 50px;
+        border: 1px solid rgb(16, 229, 236);
+        border-radius: 4px;
+    }
+
+    .chat {
+        text-align: center;
+        margin: 20px auto;
+    }
+
+    .on {
+        display: block;
+    }
+
+    .off {
+        display: none;
+    }
+</style>
+
+<body>
+    <div class="page_login">
+        <input type="text" placeholder="请输入用户名" class="name" />
+        <button type="submit" id="login">login</button>
+    </div>
+    <div class="page off">
+        <div class="left"></div>
+        <div class="right">
+            <div class="content">
+            </div>
+        </div>
+        <div class="input">
+            <input type="text" id="btn">
+            <button type="submit" id="send" style="background-color: rgb(16, 229, 236);">发送</button>
+        </div>
+    </div>
+</body>
+<script>
+    let page = document.getElementsByClassName('page')[0]
+    let name = document.getElementsByClassName('name')[0]
+    let page_login = document.getElementsByClassName('page_login')[0]
+    let login = document.getElementById('login')
+    let send = document.getElementById('send')
+    let btn = document.getElementById('btn')
+    let content = document.getElementsByClassName('content')[0]
+    let user = sessionStorage.getItem('user')
+    if (!user) {
+        page.classList.add('off')
+    }else{
+        page.classList.remove('off')
+        page_login.classList.add('off')
+    }
+   
+    let first = {}   //第一次进入
+    let second = {}  //第二次进入
+    login.onclick = function () {
+        sessionStorage.setItem('user', name.value)
+        first={
+            num: 1,
+            msg: "",
+            nickname: sessionStorage.getItem('user'),
+        }
+        if (!name.value) {
+            alert('用户名不能为空')
+            return
+        }
+        page.classList.remove('off')
+        page_login.classList.add('off')
+    }
+    let uid=new Date().getTime()
+    let ws = new WebSocket("ws://localhost:8080?" + `${uid}`)
+    send.onclick = (() => {
+        console.log(btn.value);
+        second = {
+            num: 2,
+            msg: btn.value,
+            nickname: sessionStorage.getItem('user'),
+        }
+        ws.send(JSON.stringify(second))
+    })
+    // 打开连接
+    ws.onopen = function (e) {
+        console.log("连接服务器成功");
+        ws.send(JSON.stringify(first))
+    }
+    let str = ''
+    // 相应服务端发送过来的数据
+    ws.onmessage = function (obj) {
+        if (JSON.parse(obj.data).num == 1) {
+            str = `<p>${JSON.parse(obj.data).msg}</p>`
+        }
+        if (JSON.parse(obj.data).num == 2) {
+            str = `<p>${JSON.parse(obj.data).nickname}:${JSON.parse(obj.data).msg}</p>`
+        }
+        content.innerHTML = content.innerHTML + str
+    }
+    // 关闭连接时触发
+    ws.onclose = function () {
+        console.log('关闭连接');
+    }
+    // 连接错误时触发
+    ws.onerror = function () {
+        console.log('连接出错');
+    }
+
+
+
+</script>
+
+</html>
