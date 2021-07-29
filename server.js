@@ -29,26 +29,26 @@ wss.on("connection", (ws, req) => {
         console.log(JSON.parse(obj).num);
         if (JSON.parse(obj).num == 1) {
             wss.clients.forEach(function each(client) {
-                // if (client!==ws&&client.readyState === WebSocket.OPEN) {
+                if (client.readyState === WebSocket.OPEN) {
                 client.send(JSON.stringify(
                     {
                         num: 1,
                         "nickname": JSON.parse(obj).nickname,
                         "msg": `${JSON.parse(obj).nickname}进入聊天室`
                     }));
-                // }
+                }
             })
         }
         if (JSON.parse(obj).num == 2) {
             wss.clients.forEach(function each(client) {
-                // if (client!==ws&&client.readyState === WebSocket.OPEN) {
+                if (client.readyState === WebSocket.OPEN) {
                 client.send(JSON.stringify(
                     {
                         num: 2,
                         "nickname": JSON.parse(obj).nickname,
                         "msg": JSON.parse(obj).msg
                     }));
-                // }
+                }
             })
         }
     })

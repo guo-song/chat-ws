@@ -62,7 +62,12 @@
         <button type="submit" id="login">login</button>
     </div>
     <div class="page off">
-        <div class="left"></div>
+        <div class="left">
+            <p>群聊</p>
+            <ul>
+                <li></li>
+            </ul>
+        </div>
         <div class="right">
             <div class="content">
             </div>
@@ -84,53 +89,59 @@
     let user = sessionStorage.getItem('user')
     if (!user) {
         page.classList.add('off')
-    }else{
+    } else {
         page.classList.remove('off')
         page_login.classList.add('off')
     }
-   
+
     let first = {}   //第一次进入
     let second = {}  //第二次进入
+    let user = "" //用户
+    let uid = new Date().getTime()
+    
     login.onclick = function () {
-        sessionStorage.setItem('user', name.value)
-        first={
-            num: 1,
-            msg: "",
-            nickname: sessionStorage.getItem('user'),
-        }
         if (!name.value) {
             alert('用户名不能为空')
             return
         }
+        user = sessionStorage.setItem('user', name.value)
+        first = {
+            num: 1,
+            msg: "",
+            nickname: user,
+        }
         page.classList.remove('off')
         page_login.classList.add('off')
+        // 打开连接
+        console.log(JSON.stringify(first));
+        ws.send(JSON.stringify(first))
     }
-    let uid=new Date().getTime()
-    let ws = new WebSocket("ws://localhost:8080?" + `${uid}`)
+    let ws = new WebSocket("ws://localhost:8080?" + `${user}`)
+    ws.onopen = function (e) {
+        console.log("连接服务器成功");
+    }
     send.onclick = (() => {
         console.log(btn.value);
         second = {
             num: 2,
             msg: btn.value,
-            nickname: sessionStorage.getItem('user'),
+            nickname: user,
         }
         ws.send(JSON.stringify(second))
     })
-    // 打开连接
-    ws.onopen = function (e) {
-        console.log("连接服务器成功");
-        ws.send(JSON.stringify(first))
-    }
-    let str = ''
+
+    // let str = ''
     // 相应服务端发送过来的数据
     ws.onmessage = function (obj) {
         if (JSON.parse(obj.data).num == 1) {
-            str = `<p>${JSON.parse(obj.data).msg}</p>`
+            // str = `<p>${JSON.parse(obj.data).msg}</p>`
+            content.innerHTML+= `<p>${JSON.parse(obj.data).msg}</p>`
         }
         if (JSON.parse(obj.data).num == 2) {
-            str = `<p>${JSON.parse(obj.data).nickname}:${JSON.parse(obj.data).msg}</p>`
+            // str = `<p>${JSON.parse(obj.data).nickname}:${JSON.parse(obj.data).msg}</p>`
+            content.innerHTML += `<p>${JSON.parse(obj.data).nickname}:${JSON.parse(obj.data).msg}</p>`
         }
-        content.innerHTML = content.innerHTML + str
+        // content.innerHTML = content.innerHTML + str
     }
     // 关闭连接时触发
     ws.onclose = function () {
