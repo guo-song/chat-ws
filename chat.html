@@ -176,19 +176,20 @@
         // 创建websocket连接
         ws = new WebSocket("ws://localhost:8080?" + `${user}`)
         // 打开连接
+        // 用户首次登陆发送的请求
         ws.onopen = function (e) {
-            // 用户首次登陆发送的请求
+            console.log("连接服务器成功");
             ws.send(JSON.stringify({
                 num: 1,
                 nickname: user,
                 msg: `欢迎${user}`,
                 object: "群聊"
             }))
-            console.log("连接服务器成功");
         }
         let str = ""
         // 响应服务端发送过来的数据
         ws.onmessage = function (obj) {
+            console.log(JSON.parse(obj.data));
             // 获取当前所有用户并渲染
             if (JSON.parse(obj.data).type === "user") {
                 // 从服务端返回所有的用户
@@ -201,29 +202,40 @@
                 // 渲染用户列表
                 alluser.forEach((item) => {
                     str += `<li>${item}</li>`
+
                 })
                 chat.innerHTML = '<li>群聊</li>' + str
-                // 循环用户列表
-                Array.from(lis).forEach((item) => {
-                    right.innerHTML += `<div class="content" index="${item.innerHTML}"></div>`
-                    item.onclick = function () {
-                        now_object = item.innerHTML
-                    }
-                });
+                 // 循环用户列表
+            Array.from(lis).forEach((item) => {
+                right.innerHTML += `<div class="content" index="${item.innerHTML}"></div>`
+            });
             }
             let content = document.getElementsByClassName('content')
+            // 循环用户列表
+            Array.from(lis).forEach((item) => {
+                item.onclick = function () {
+                    now_object = item.innerHTML
+                    Array.from(content).forEach(msg => {
+                        msg.classList.add('off')
+                        if(item.innerHTML ===msg.getAttribute('index')){
+                            msg.classList.remove('off')
+                        }
+                    })
+                    
+                }
+            });
             Array.from(content).forEach(item => {
                 // 第一次进入登陆欢迎
-                console.log(item.getAttribute('index'));
-                console.log(JSON.parse(obj.data).object);
                 item.classList.add('off')
-                if (item.getAttribute('index') == JSON.parse(obj.data).object) {
+                if (item.getAttribute('index') == JSON.parse(obj.data).object||item.getAttribute('index')==JSON.parse(obj.data).nickname) {
+                    console.log(item.getAttribute('index'));
+                    console.log(JSON.parse(obj.data).object);
                     item.classList.remove('off')
-                    if (JSON.parse(obj.data).num === 1 && JSON.parse(obj.data).object == now_object) {
+                    if (JSON.parse(obj.data).num === 1) {
                         item.innerHTML += `<p class="message">${JSON.parse(obj.data).msg}</p>`
                     }
                     // 后续发送消息进行渲染
-                    if (JSON.parse(obj.data).num === 2 && JSON.parse(obj.data).object == now_object) {
+                    if (JSON.parse(obj.data).num === 2 ) {
                         item.innerHTML += `<p class="message"><span class="img">${JSON.parse(obj.data).nickname}</span>${JSON.parse(obj.data).msg}</p>`
 
                     }
