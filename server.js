@@ -22,57 +22,62 @@ let server = http.createServer((req, res) => {
 
 const wss = new WebSocket.Server({ server })
 wss.on("connection", (ws, req) => {
-    console.log(req.url);
     // 首先登陆的对象，后续如果有相同的用户直接覆盖
     let object = decodeURI(req.url.match(/(?<=\?)[^:]+?(?=:|$)/))
     user[object] = ws
     all_user.push(object)
+    console.log("我是所有用户" + all_user);
     wss.clients.forEach(function each(client) {
         if (client.readyState === WebSocket.OPEN) {
-        client.send(JSON.stringify(
-            {
-                nickname: all_user,
-               type:"user"
-            }));
+            client.send(JSON.stringify(
+                {
+                    nickname: all_user,
+                    type: "user"
+                }));
         }
     })
     ws.on("message", (obj) => {
-        console.log(JSON.parse(obj));
+        console.log("前台发的送消息" + JSON.parse(obj).nickname);
         if (JSON.parse(obj).object == "群聊") {
+            console.log("群聊");
             wss.clients.forEach(function each(client) {
                 if (client.readyState === WebSocket.OPEN) {
-                client.send(JSON.stringify(
-                    {
-                        num: JSON.parse(obj).num,
-                        nickname: JSON.parse(obj).nickname,
-                        msg: JSON.parse(obj).msg,
-                        object:JSON.parse(obj).object
-                    }));
+                    client.send(JSON.stringify(
+                        {
+                            num: JSON.parse(obj).num,
+                            nickname: JSON.parse(obj).nickname,
+                            msg: JSON.parse(obj).msg,
+                            object: JSON.parse(obj).object
+                        }));
                 }
             })
         }
-            if(user[JSON.parse(obj).object]){
-                if(user[JSON.parse(obj).object].readyState===1){
-                    user[JSON.parse(obj).object].send(
-                        JSON.stringify(
-                            {
-                                num: JSON.parse(obj).num,
-                                nickname: JSON.parse(obj).nickname,
-                                msg: JSON.parse(obj).msg,
-                                object:JSON.parse(obj).object
-                            })
-                    )
-                    ws.send(
-                        JSON.stringify(
-                            {
-                                num: JSON.parse(obj).num,
-                                nickname: JSON.parse(obj).nickname,
-                                msg: JSON.parse(obj).msg,
-                                object:JSON.parse(obj).object
-                            })
-                    )
-                }
+        if (user[JSON.parse(obj).object]) {
+            console.log(JSON.parse(obj).object);
+            console.log(user[JSON.parse(obj).object]);
+            console.log(all_user);
+            console.log("个人聊天" + user[JSON.parse(obj).object]);
+            if (user[JSON.parse(obj).object].readyState === 1) {
+                user[JSON.parse(obj).object].send(
+                    JSON.stringify(
+                        {
+                            num: JSON.parse(obj).num,
+                            nickname: JSON.parse(obj).nickname,
+                            msg: JSON.parse(obj).msg,
+                            object: JSON.parse(obj).object
+                        })
+                )
+                ws.send(
+                    JSON.stringify(
+                        {
+                            num: JSON.parse(obj).num,
+                            nickname: JSON.parse(obj).nickname,
+                            msg: JSON.parse(obj).msg,
+                            object: JSON.parse(obj).object
+                        })
+                )
             }
+        }
     })
 })
 
