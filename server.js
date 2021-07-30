@@ -6,7 +6,8 @@ const WebSocket = require("ws")
 /**
  * user存放登陆的用户
  */
-let user = []
+let user = {}
+let all_user = []
 let server = http.createServer((req, res) => {
     res.setHeader("content-type", "text/html;charset=utf8");
 
@@ -22,35 +23,56 @@ let server = http.createServer((req, res) => {
 const wss = new WebSocket.Server({ server })
 wss.on("connection", (ws, req) => {
     console.log(req.url);
-    user[req.url] = ws
-    console.log("server: receive connection");
+    // 首先登陆的对象，后续如果有相同的用户直接覆盖
+    let object = decodeURI(req.url.match(/(?<=\?)[^:]+?(?=:|$)/))
+    user[object] = ws
+    all_user.push(object)
+    wss.clients.forEach(function each(client) {
+        if (client.readyState === WebSocket.OPEN) {
+        client.send(JSON.stringify(
+            {
+                nickname: all_user,
+               type:"user"
+            }));
+        }
+    })
     ws.on("message", (obj) => {
-        console.log(obj);
-        console.log(JSON.parse(obj).num);
-        if (JSON.parse(obj).num == 1) {
+        console.log(JSON.parse(obj));
+        if (JSON.parse(obj).object == "群聊") {
             wss.clients.forEach(function each(client) {
                 if (client.readyState === WebSocket.OPEN) {
                 client.send(JSON.stringify(
                     {
-                        num: 1,
-                        "nickname": JSON.parse(obj).nickname,
-                        "msg": `${JSON.parse(obj).nickname}进入聊天室`
+                        num: JSON.parse(obj).num,
+                        nickname: JSON.parse(obj).nickname,
+                        msg: JSON.parse(obj).msg,
+                        object:JSON.parse(obj).object
                     }));
                 }
             })
         }
-        if (JSON.parse(obj).num == 2) {
-            wss.clients.forEach(function each(client) {
-                if (client.readyState === WebSocket.OPEN) {
-                client.send(JSON.stringify(
-                    {
-                        num: 2,
-                        "nickname": JSON.parse(obj).nickname,
-                        "msg": JSON.parse(obj).msg
-                    }));
+            if(user[JSON.parse(obj).object]){
+                if(user[JSON.parse(obj).object].readyState===1){
+                    user[JSON.parse(obj).object].send(
+                        JSON.stringify(
+                            {
+                                num: JSON.parse(obj).num,
+                                nickname: JSON.parse(obj).nickname,
+                                msg: JSON.parse(obj).msg,
+                                object:JSON.parse(obj).object
+                            })
+                    )
+                    ws.send(
+                        JSON.stringify(
+                            {
+                                num: JSON.parse(obj).num,
+                                nickname: JSON.parse(obj).nickname,
+                                msg: JSON.parse(obj).msg,
+                                object:JSON.parse(obj).object
+                            })
+                    )
                 }
-            })
-        }
+            }
     })
 })
 

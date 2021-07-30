@@ -8,13 +8,19 @@
     <title>Document</title>
 </head>
 <style>
-    /* p:nth-child(2n) {
-        background-color: #fff;
+    body {
+        padding: 0;
+        margin: 0;
     }
 
-    p:nth-child(2n-1) {
+    .top {
+        width: 100%;
+        height: 50px;
         background-color: #eee;
-    } */
+        text-align: center;
+        line-height: 50px;
+        margin-left: 200px;
+    }
 
     input,
     button {
@@ -26,19 +32,21 @@
         left: 0;
         bottom: 0;
         width: 100%;
-        height: 200px;
+        height: 100px;
+        margin-left: 200px;
     }
 
     #btn {
-        width: 500px;
+        width: 80%;
         height: 100px;
-        border: 1px solid rgb(16, 229, 236);
+        border: 1px solid #eee;
         border-radius: 4px;
     }
 
     #send {
-        height: 50px;
-        border: 1px solid rgb(16, 229, 236);
+        height: 100px;
+        width: 10%;
+        border: 1px solid #eee;
         border-radius: 4px;
     }
 
@@ -54,6 +62,51 @@
     .off {
         display: none;
     }
+
+    .chat {
+        margin-top: 50px;
+    }
+
+    .chat li {
+        list-style: none;
+        height: 50px;
+        width: 150px;
+        line-height: 50px;
+        background-color: #eee;
+    }
+
+    .page {
+        overflow: hidden;
+    }
+
+    .left {
+        position: fixed;
+        left: 0;
+        top: 0;
+        width: 200px;
+        height: 100vh;
+        background-color: rgba(121, 119, 119, 0.63);
+    }
+
+    .right {
+        /* width: 100%; */
+        margin-left: 200px;
+    }
+
+    .message {
+        display: flex;
+        align-items: center;
+        /* flex-direction: column; */
+    }
+
+    .img {
+        width: 50px;
+        height: 50px;
+        line-height: 50px;
+        text-align: center;
+        border-radius: 50%;
+        background-color: aqua;
+    }
 </style>
 
 <body>
@@ -62,98 +115,138 @@
         <button type="submit" id="login">login</button>
     </div>
     <div class="page off">
-        <div class="left">
-            <p>群聊</p>
-            <ul>
-                <li></li>
-            </ul>
+        <div class="top">
+            聊天室
         </div>
-        <div class="right">
-            <div class="content">
+        <div class="div">
+            <div class="left">
+                <ul class="chat">
+                </ul>
+            </div>
+            <div class="right">
+
             </div>
         </div>
         <div class="input">
             <input type="text" id="btn">
-            <button type="submit" id="send" style="background-color: rgb(16, 229, 236);">发送</button>
+            <button type="submit" id="send" style="background-color: #eee;">发送</button>
         </div>
     </div>
 </body>
 <script>
+    let topper = document.getElementsByClassName('top')[0]
     let page = document.getElementsByClassName('page')[0]
     let name = document.getElementsByClassName('name')[0]
     let page_login = document.getElementsByClassName('page_login')[0]
     let login = document.getElementById('login')
     let send = document.getElementById('send')
     let btn = document.getElementById('btn')
-    let content = document.getElementsByClassName('content')[0]
+
+    let chat = document.getElementsByClassName('chat')[0]
+    let right = document.getElementsByClassName('right')[0]
+    let lis = document.getElementsByTagName('li')
+    // 获取登录用户nickname
     let user = sessionStorage.getItem('user')
+    // ws初始赋予null值
+    var ws = null
+    // 存储除自己外所有用户
+    let alluser = []
+    // 定义目前聊天为群聊
+    let now_object = "群聊"
+    // 判断用户是否登录
     if (!user) {
         page.classList.add('off')
     } else {
         page.classList.remove('off')
         page_login.classList.add('off')
     }
-
-    let first = {}   //第一次进入
-    let second = {}  //第二次进入
-    let user = "" //用户
-    let uid = new Date().getTime()
-    
+    // 登陆事件
     login.onclick = function () {
         if (!name.value) {
             alert('用户名不能为空')
             return
         }
-        user = sessionStorage.setItem('user', name.value)
-        first = {
-            num: 1,
-            msg: "",
-            nickname: user,
-        }
+        // 存储用户nickname
+        sessionStorage.setItem('user', name.value)
         page.classList.remove('off')
         page_login.classList.add('off')
+        // 取出存储的用户nickname
+        user = sessionStorage.getItem('user')
+        topper.innerHTML = `${user} 聊天室`
+        // 创建websocket连接
+        ws = new WebSocket("ws://localhost:8080?" + `${user}`)
         // 打开连接
-        console.log(JSON.stringify(first));
-        ws.send(JSON.stringify(first))
+        ws.onopen = function (e) {
+            // 用户首次登陆发送的请求
+            ws.send(JSON.stringify({
+                num: 1,
+                nickname: user,
+                msg: `欢迎${user}`,
+                object: "群聊"
+            }))
+            console.log("连接服务器成功");
+        }
+        let str = ""
+        // 响应服务端发送过来的数据
+        ws.onmessage = function (obj) {
+            // 获取当前所有用户并渲染
+            if (JSON.parse(obj.data).type === "user") {
+                // 从服务端返回所有的用户
+                alluser = JSON.parse(obj.data).nickname
+                // 对所有用户进行降重处理
+                Array.from(new Set(alluser))
+                // 去除当前用户自己
+                alluser.splice(alluser.indexOf(user), 1)
+               
+                // 渲染用户列表
+                alluser.forEach((item) => {
+                    str += `<li>${item}</li>`
+                })
+                chat.innerHTML = '<li>群聊</li>' + str
+                // 循环用户列表
+                Array.from(lis).forEach((item) => {
+                    right.innerHTML += `<div class="content" index="${item.innerHTML}"></div>`
+                    item.onclick = function () {
+                        now_object = item.innerHTML
+                    }
+                });
+            }
+            let content = document.getElementsByClassName('content')
+            Array.from(content).forEach(item => {
+                // 第一次进入登陆欢迎
+                console.log(item.getAttribute('index'));
+                console.log(JSON.parse(obj.data).object);
+                item.classList.add('off')
+                if (item.getAttribute('index') == JSON.parse(obj.data).object) {
+                    item.classList.remove('off')
+                    if (JSON.parse(obj.data).num === 1 && JSON.parse(obj.data).object == now_object) {
+                        item.innerHTML += `<p class="message">${JSON.parse(obj.data).msg}</p>`
+                    }
+                    // 后续发送消息进行渲染
+                    if (JSON.parse(obj.data).num === 2 && JSON.parse(obj.data).object == now_object) {
+                        item.innerHTML += `<p class="message"><span class="img">${JSON.parse(obj.data).nickname}</span>${JSON.parse(obj.data).msg}</p>`
+
+                    }
+                }
+            });
+
+
+        }
     }
-    let ws = new WebSocket("ws://localhost:8080?" + `${user}`)
-    ws.onopen = function (e) {
-        console.log("连接服务器成功");
-    }
+    topper.innerHTML = `${user} 聊天室`
+
+    // 消息发送
     send.onclick = (() => {
-        console.log(btn.value);
-        second = {
+        ws.send(JSON.stringify({
             num: 2,
             msg: btn.value,
             nickname: user,
+            object: now_object
         }
-        ws.send(JSON.stringify(second))
+        ))
+        //清空输入框
+        btn.value = ""
     })
-
-    // let str = ''
-    // 相应服务端发送过来的数据
-    ws.onmessage = function (obj) {
-        if (JSON.parse(obj.data).num == 1) {
-            // str = `<p>${JSON.parse(obj.data).msg}</p>`
-            content.innerHTML+= `<p>${JSON.parse(obj.data).msg}</p>`
-        }
-        if (JSON.parse(obj.data).num == 2) {
-            // str = `<p>${JSON.parse(obj.data).nickname}:${JSON.parse(obj.data).msg}</p>`
-            content.innerHTML += `<p>${JSON.parse(obj.data).nickname}:${JSON.parse(obj.data).msg}</p>`
-        }
-        // content.innerHTML = content.innerHTML + str
-    }
-    // 关闭连接时触发
-    ws.onclose = function () {
-        console.log('关闭连接');
-    }
-    // 连接错误时触发
-    ws.onerror = function () {
-        console.log('连接出错');
-    }
-
-
-
 </script>
 
 </html>
