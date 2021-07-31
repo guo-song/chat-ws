@@ -20,6 +20,7 @@
         text-align: center;
         line-height: 50px;
         margin-left: 200px;
+        background-color: rgba(121, 119, 119, 0.63);
     }
 
     input,
@@ -65,14 +66,27 @@
 
     .chat {
         margin-top: 50px;
+        padding: 0;
+        margin: 0;
     }
-
-    .chat li {
+.group {
+    padding: 0;
+    margin: 0;
+}
+    .chat li,
+    .group {
+        margin-bottom: 5px;
         list-style: none;
         height: 50px;
-        width: 150px;
+        width: 200px;
         line-height: 50px;
+        text-align: center;
         background-color: #eee;
+    }
+
+    .chat li:active,
+    .group:active {
+        background-color: aqua;
     }
 
     .page {
@@ -119,18 +133,23 @@
             聊天室
         </div>
         <div class="div">
-            <div class="left">
+            <class class="left">
+                <p class="group">群聊</p>
                 <ul class="chat">
                 </ul>
+        </div>
+        <div class="right">
+            <div class="everyone">
             </div>
-            <div class="right">
+            <div class="personal">
+            </div>
 
-            </div>
         </div>
-        <div class="input">
-            <input type="text" id="btn">
-            <button type="submit" id="send" style="background-color: #eee;">发送</button>
-        </div>
+    </div>
+    <div class="input">
+        <input type="text" id="btn">
+        <button type="submit" id="send" style="background-color: #eee;">发送</button>
+    </div>
     </div>
 </body>
 <script>
@@ -143,7 +162,9 @@
     let btn = document.getElementById('btn')
 
     let chat = document.getElementsByClassName('chat')[0]
-    let right = document.getElementsByClassName('right')[0]
+    let personal = document.getElementsByClassName('personal')[0]
+    let group = document.getElementsByClassName('group')[0]
+    let everyone = document.getElementsByClassName('everyone')[0]
     let lis = document.getElementsByTagName('li')
     // 获取登录用户nickname
     let user = sessionStorage.getItem('user')
@@ -153,6 +174,8 @@
     let alluser = []
     // 定义目前聊天为群聊
     let now_object = "群聊"
+    // 发送消息前先选择发送对象
+    let tag = false 
     // 判断用户是否登录
     if (!user) {
         page.classList.add('off')
@@ -198,49 +221,76 @@
                 Array.from(new Set(alluser))
                 // 去除当前用户自己
                 alluser.splice(alluser.indexOf(user), 1)
-               
+
                 // 渲染用户列表
                 alluser.forEach((item) => {
                     str += `<li>${item}</li>`
 
                 })
-                chat.innerHTML = '<li>群聊</li>' + str
-                 // 循环用户列表
-            Array.from(lis).forEach((item) => {
-                right.innerHTML += `<div class="content" index="${item.innerHTML}"></div>`
-            });
+                chat.innerHTML = str
+                // 循环用户列表
+                Array.from(lis).forEach((item) => {
+                    personal.innerHTML += `<div class="content" index="${item.innerHTML}"></div>`
+                });
             }
             let content = document.getElementsByClassName('content')
             // 循环用户列表
             Array.from(lis).forEach((item) => {
                 item.onclick = function () {
+                    tag = true
                     now_object = item.innerHTML
+                    everyone.classList.add('off')
                     Array.from(content).forEach(msg => {
                         msg.classList.add('off')
-                        if(item.innerHTML ===msg.getAttribute('index')){
+                        if (item.innerHTML === msg.getAttribute('index')) {
                             msg.classList.remove('off')
                         }
                     })
-                    
-                }
-            });
-            Array.from(content).forEach(item => {
-                // 第一次进入登陆欢迎
-                item.classList.add('off')
-                if (item.getAttribute('index') == JSON.parse(obj.data).object||item.getAttribute('index')==JSON.parse(obj.data).nickname) {
-                    console.log(item.getAttribute('index'));
-                    console.log(JSON.parse(obj.data).object);
-                    item.classList.remove('off')
-                    if (JSON.parse(obj.data).num === 1) {
-                        item.innerHTML += `<p class="message">${JSON.parse(obj.data).msg}</p>`
-                    }
-                    // 后续发送消息进行渲染
-                    if (JSON.parse(obj.data).num === 2 ) {
-                        item.innerHTML += `<p class="message"><span class="img">${JSON.parse(obj.data).nickname}</span>${JSON.parse(obj.data).msg}</p>`
 
-                    }
                 }
             });
+            group.onclick = function () {
+                now_object = group.innerHTML
+                tag = true
+                everyone.classList.remove('off')
+                Array.from(content).forEach(item => {
+                    item.classList.add('off')
+                })
+            }
+            if (group.innerHTML === JSON.parse(obj.data).object) {
+                // group.classList.add('off')
+                Array.from(content).forEach(msg => {
+                    msg.classList.add('off')
+                })
+                if (JSON.parse(obj.data).num === 1) {
+                    everyone.innerHTML += `<p class="message">${JSON.parse(obj.data).msg}</p>`
+                }
+                // 后续发送消息进行渲染
+                if (JSON.parse(obj.data).num === 2) {
+                    everyone.innerHTML += `<p class="message"><span class="img">${JSON.parse(obj.data).nickname}</span>${JSON.parse(obj.data).msg}</p>`
+
+                }
+            } else {
+
+                Array.from(content).forEach(item => {
+                    // 第一次进入登陆欢迎
+                    item.classList.add('off')
+                    if (item.getAttribute('index') == JSON.parse(obj.data).object) {
+                        item.classList.remove('off')
+                        // 后续发送消息进行渲染
+                        if (JSON.parse(obj.data).num === 2) {
+                            item.innerHTML += `<p class="message"><span class="img">${JSON.parse(obj.data).nickname}</span>${JSON.parse(obj.data).msg}</p>`
+
+                        }
+                    }
+                    if (item.getAttribute('index') == JSON.parse(obj.data).nickname) {
+                        if (JSON.parse(obj.data).num === 2) {
+                            item.innerHTML += `<p class="message"><span class="img">${JSON.parse(obj.data).nickname}</span>${JSON.parse(obj.data).msg}</p>`
+
+                        }
+                    }
+                });
+            }
 
 
         }
@@ -249,15 +299,20 @@
 
     // 消息发送
     send.onclick = (() => {
-        ws.send(JSON.stringify({
-            num: 2,
-            msg: btn.value,
-            nickname: user,
-            object: now_object
+        if(!tag){
+            alert("选择聊天对象")
+            return
+        }else{
+            ws.send(JSON.stringify({
+                num: 2,
+                msg: btn.value,
+                nickname: user,
+                object: now_object
+            }
+            ))
+            //清空输入框
+            btn.value = ""
         }
-        ))
-        //清空输入框
-        btn.value = ""
     })
 </script>
 

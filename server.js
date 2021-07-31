@@ -10,7 +10,6 @@ let user = {}
 let all_user = []
 let server = http.createServer((req, res) => {
     res.setHeader("content-type", "text/html;charset=utf8");
-
     if (req.url === '/') {
         fs.createReadStream('chat.html').pipe(res);
     }
@@ -39,7 +38,6 @@ wss.on("connection", (ws, req) => {
     ws.on("message", (obj) => {
         console.log("前台发的送消息" + JSON.parse(obj).nickname);
         if (JSON.parse(obj).object == "群聊") {
-            console.log("群聊");
             wss.clients.forEach(function each(client) {
                 if (client.readyState === WebSocket.OPEN) {
                     client.send(JSON.stringify(
