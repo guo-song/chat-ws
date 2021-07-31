@@ -11,8 +11,29 @@
     body {
         padding: 0;
         margin: 0;
-    }
+        }
 
+    .page_login {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 400px;
+        height: 300px;
+        text-align: center;
+        line-height: 100px;
+        background-color: rgba(230, 224, 224, 0.979);
+    }
+    .name{
+        width: 200px;
+        height: 30px;
+        border: 1px solid #eee;
+    }
+    #login{
+        width: 50px;
+        height: 30px;
+        border: 1px solid #eee;
+    }
     .top {
         width: 100%;
         height: 50px;
@@ -69,10 +90,12 @@
         padding: 0;
         margin: 0;
     }
-.group {
-    padding: 0;
-    margin: 0;
-}
+
+    .group {
+        padding: 0;
+        margin: 0;
+    }
+
     .chat li,
     .group {
         margin-bottom: 5px;
@@ -125,8 +148,11 @@
 
 <body>
     <div class="page_login">
-        <input type="text" placeholder="请输入用户名" class="name" />
-        <button type="submit" id="login">login</button>
+        <p>聊天室</p>
+        <div>
+            <input type="text" placeholder="请输入用户名" class="name" />
+            <button type="submit" id="login">login</button>
+        </div>
     </div>
     <div class="page off">
         <div class="top">
@@ -143,13 +169,11 @@
             </div>
             <div class="personal">
             </div>
-
         </div>
-    </div>
-    <div class="input">
-        <input type="text" id="btn">
-        <button type="submit" id="send" style="background-color: #eee;">发送</button>
-    </div>
+        <div class="input">
+            <input type="text" id="btn">
+            <button type="submit" id="send" style="background-color: #eee;">发送</button>
+        </div>
     </div>
 </body>
 <script>
@@ -175,7 +199,7 @@
     // 定义目前聊天为群聊
     let now_object = "群聊"
     // 发送消息前先选择发送对象
-    let tag = false 
+    let tag = false
     // 判断用户是否登录
     if (!user) {
         page.classList.add('off')
@@ -233,15 +257,22 @@
                     personal.innerHTML += `<div class="content" index="${item.innerHTML}"></div>`
                 });
             }
+            // 获取聊天信息显示标签
             let content = document.getElementsByClassName('content')
             // 循环用户列表
             Array.from(lis).forEach((item) => {
+                // 循环点击用户列表
                 item.onclick = function () {
+                    // 选择聊天·对象后改变状态为true，可以进行消息发送
                     tag = true
+                    // 获取目前聊天对象
                     now_object = item.innerHTML
+                    // 隐藏群聊消息框
                     everyone.classList.add('off')
                     Array.from(content).forEach(msg => {
+                        // 隐藏所有单聊用户消息框
                         msg.classList.add('off')
+                        // 显示当前选择的消息框
                         if (item.innerHTML === msg.getAttribute('index')) {
                             msg.classList.remove('off')
                         }
@@ -249,19 +280,26 @@
 
                 }
             });
+            // 选择群聊
             group.onclick = function () {
+                // 获取当前聊天对象为群聊
                 now_object = group.innerHTML
+                //  // 选择聊天·对象后改变状态为true，可以进行消息发送
                 tag = true
+                // 显示群聊消息框
                 everyone.classList.remove('off')
+                // 隐藏其他单聊消息框
                 Array.from(content).forEach(item => {
                     item.classList.add('off')
                 })
             }
+            // 聊天对象为群聊
             if (group.innerHTML === JSON.parse(obj.data).object) {
                 // group.classList.add('off')
                 Array.from(content).forEach(msg => {
                     msg.classList.add('off')
                 })
+                // 首次进入
                 if (JSON.parse(obj.data).num === 1) {
                     everyone.innerHTML += `<p class="message">${JSON.parse(obj.data).msg}</p>`
                 }
@@ -271,10 +309,10 @@
 
                 }
             } else {
-
+                // 聊天对象为单聊
                 Array.from(content).forEach(item => {
-                    // 第一次进入登陆欢迎
                     item.classList.add('off')
+                    // 选择聊天对象，将服务端返回的消息渲染在相应消息开框
                     if (item.getAttribute('index') == JSON.parse(obj.data).object) {
                         item.classList.remove('off')
                         // 后续发送消息进行渲染
@@ -283,6 +321,7 @@
 
                         }
                     }
+                    // 将返回的消息渲染在发送者的消息框
                     if (item.getAttribute('index') == JSON.parse(obj.data).nickname) {
                         if (JSON.parse(obj.data).num === 2) {
                             item.innerHTML += `<p class="message"><span class="img">${JSON.parse(obj.data).nickname}</span>${JSON.parse(obj.data).msg}</p>`
@@ -299,10 +338,11 @@
 
     // 消息发送
     send.onclick = (() => {
-        if(!tag){
+        // 发送消息前先进行聊天对象的选择
+        if (!tag) {
             alert("选择聊天对象")
             return
-        }else{
+        } else {
             ws.send(JSON.stringify({
                 num: 2,
                 msg: btn.value,
