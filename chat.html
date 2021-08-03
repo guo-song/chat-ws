@@ -11,7 +11,7 @@
     body {
         padding: 0;
         margin: 0;
-        }
+    }
 
     .page_login {
         position: fixed;
@@ -24,16 +24,19 @@
         line-height: 100px;
         background-color: rgba(230, 224, 224, 0.979);
     }
-    .name{
+
+    .name {
         width: 200px;
         height: 30px;
         border: 1px solid #eee;
     }
-    #login{
+
+    #login {
         width: 50px;
         height: 30px;
         border: 1px solid #eee;
     }
+
     .top {
         width: 100%;
         height: 50px;
@@ -189,13 +192,15 @@
     let personal = document.getElementsByClassName('personal')[0]
     let group = document.getElementsByClassName('group')[0]
     let everyone = document.getElementsByClassName('everyone')[0]
+    // 获取聊天信息显示标签
+    let content = document.getElementsByClassName('content')
     let lis = document.getElementsByTagName('li')
     // 获取登录用户nickname
     let user = sessionStorage.getItem('user')
     // ws初始赋予null值
-    var ws = null
+    let ws = null
     // 存储除自己外所有用户
-    let alluser = []
+    var alluser = []
     // 定义目前聊天为群聊
     let now_object = "群聊"
     // 发送消息前先选择发送对象
@@ -233,32 +238,29 @@
                 object: "群聊"
             }))
         }
-        let str = ""
         // 响应服务端发送过来的数据
         ws.onmessage = function (obj) {
-            console.log(JSON.parse(obj.data));
+            let str = ""
             // 获取当前所有用户并渲染
             if (JSON.parse(obj.data).type === "user") {
                 // 从服务端返回所有的用户
-                alluser = JSON.parse(obj.data).nickname
-                // 对所有用户进行降重处理
-                Array.from(new Set(alluser))
+                alluser = JSON.parse(obj.data).nickname.filter(item => {
+                    return alluser.indexOf('item') === -1
+                })
                 // 去除当前用户自己
                 alluser.splice(alluser.indexOf(user), 1)
-
                 // 渲染用户列表
                 alluser.forEach((item) => {
                     str += `<li>${item}</li>`
-
                 })
                 chat.innerHTML = str
-                // 循环用户列表
+                let str2 = ""
                 Array.from(lis).forEach((item) => {
-                    personal.innerHTML += `<div class="content" index="${item.innerHTML}"></div>`
+                    str2 += `<div class="content" index="${item.innerHTML}"></div>`
                 });
+                personal.innerHTML = str2
             }
-            // 获取聊天信息显示标签
-            let content = document.getElementsByClassName('content')
+
             // 循环用户列表
             Array.from(lis).forEach((item) => {
                 // 循环点击用户列表
@@ -313,28 +315,21 @@
                 Array.from(content).forEach(item => {
                     item.classList.add('off')
                     // 选择聊天对象，将服务端返回的消息渲染在相应消息开框
-                    if (item.getAttribute('index') == JSON.parse(obj.data).object) {
+                    if (item.getAttribute('index') == JSON.parse(obj.data).object && JSON.parse(obj.data).num === 2) {
                         item.classList.remove('off')
                         // 后续发送消息进行渲染
-                        if (JSON.parse(obj.data).num === 2) {
-                            item.innerHTML += `<p class="message"><span class="img">${JSON.parse(obj.data).nickname}</span>${JSON.parse(obj.data).msg}</p>`
-
-                        }
+                        item.innerHTML = item.innerHTML + `<p class="message"><span class="img">${JSON.parse(obj.data).nickname}</span>${JSON.parse(obj.data).msg}</p>`
                     }
                     // 将返回的消息渲染在发送者的消息框
-                    if (item.getAttribute('index') == JSON.parse(obj.data).nickname) {
-                        if (JSON.parse(obj.data).num === 2) {
-                            item.innerHTML += `<p class="message"><span class="img">${JSON.parse(obj.data).nickname}</span>${JSON.parse(obj.data).msg}</p>`
-
-                        }
+                    if (item.getAttribute('index') == JSON.parse(obj.data).nickname && JSON.parse(obj.data).num === 2) {
+                        item.innerHTML = item.innerHTML + `<p class="message"><span class="img">${JSON.parse(obj.data).nickname}</span>${JSON.parse(obj.data).msg}</p>`
                     }
                 });
             }
-
-
         }
+
+        topper.innerHTML = `${user} 聊天室`
     }
-    topper.innerHTML = `${user} 聊天室`
 
     // 消息发送
     send.onclick = (() => {
@@ -346,7 +341,7 @@
             ws.send(JSON.stringify({
                 num: 2,
                 msg: btn.value,
-                nickname: user,
+                nickname: sessionStorage.getItem('user'),
                 object: now_object
             }
             ))
