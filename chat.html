@@ -205,12 +205,24 @@
     let now_object = "群聊"
     // 发送消息前先选择发送对象
     let tag = false
+    //判断是否关闭连接,true不关闭
+    let closeConnect = ""
+    // 判断当剩余一个用户的时候关闭连接
+    let length = ""
     // 判断用户是否登录
+    let move_user = ""
     if (!user) {
         page.classList.add('off')
     } else {
         page.classList.remove('off')
         page_login.classList.add('off')
+        topper.innerHTML = `${user} 聊天室`
+        connectSocket({
+            num: 1,
+            nickname: user,
+            msg: `刷新成功`,
+            object: "群聊"
+        })
     }
     // 登陆事件
     login.onclick = function () {
@@ -225,42 +237,55 @@
         // 取出存储的用户nickname
         user = sessionStorage.getItem('user')
         topper.innerHTML = `${user} 聊天室`
+        connectSocket({
+            num: 1,
+            nickname: user,
+            msg: `欢迎${user}`,
+            object: "群聊"
+        })
+    }
+    function connectSocket(data) {
         // 创建websocket连接
         ws = new WebSocket("ws://localhost:8080?" + `${user}`)
-        // 打开连接
-        // 用户首次登陆发送的请求
         ws.onopen = function (e) {
             console.log("连接服务器成功");
-            ws.send(JSON.stringify({
-                num: 1,
-                nickname: user,
-                msg: `欢迎${user}`,
-                object: "群聊"
-            }))
+            // 用户首次登陆发送的请求
+            ws.send(JSON.stringify(data))
         }
         // 响应服务端发送过来的数据
         ws.onmessage = function (obj) {
-            let str = ""
+            if (JSON.parse(obj.data).num === 3) {
+                everyone.innerHTML += `<p class="message">${JSON.parse(obj.data).disconnect}离开了</p>`
+                move_user = JSON.parse(obj.data).disconnect
+                Array.from(lis).forEach((item) => {
+                    if (item.innerHTML == JSON.parse(obj.data).disconnect) {
+                        chat.removeChild(item)
+                    }
+                })
+                // length = JSON.parse(obj.data).connect.length
+            }
+
             // 获取当前所有用户并渲染
             if (JSON.parse(obj.data).type === "user") {
                 // 从服务端返回所有的用户
                 alluser = JSON.parse(obj.data).nickname.filter(item => {
                     return alluser.indexOf('item') === -1
                 })
+                alluser = Array.from(new Set(alluser))
+                console.log(alluser);
                 // 去除当前用户自己
                 alluser.splice(alluser.indexOf(user), 1)
                 // 渲染用户列表
+                let str1 = ""
                 alluser.forEach((item) => {
-                    str += `<li>${item}</li>`
+                    str1 += `<li>${item}</li>`
                 })
-                chat.innerHTML = str
-                let str2 = ""
+                chat.innerHTML = str1
+                //过滤
                 Array.from(lis).forEach((item) => {
-                    str2 += `<div class="content" index="${item.innerHTML}"></div>`
+                    personal.innerHTML += `<div class="content" index="${item.innerHTML}"></div>`
                 });
-                personal.innerHTML = str2
             }
-
             // 循环用户列表
             Array.from(lis).forEach((item) => {
                 // 循环点击用户列表
@@ -327,8 +352,9 @@
                 });
             }
         }
-
-        topper.innerHTML = `${user} 聊天室`
+        ws.onclose = function (err) {
+            // ws.close()
+        }
     }
 
     // 消息发送
@@ -349,6 +375,17 @@
             btn.value = ""
         }
     })
+    window.onunload = function () {
+        ws.send(JSON.stringify({
+            num: 3,
+            disconnect: sessionStorage.getItem('user'),
+            msg:"关闭连接"
+        }
+        ))
+
+        connectSocket(data)
+        wx.close()
+    }
 </script>
 
 </html>

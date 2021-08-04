@@ -27,6 +27,7 @@ wss.on("connection", (ws, req) => {
     user[object] = ws
     // 存储所有登陆用户
     all_user.push(object)
+    all_user = Array.from(new Set(all_user))
     // 广播
     wss.clients.forEach(function each(client) {
         if (client.readyState === WebSocket.OPEN) {
@@ -38,7 +39,22 @@ wss.on("connection", (ws, req) => {
         }
     })
     ws.on("message", (obj) => {
-        console.log("前台发的送消息" + JSON.parse(obj).nickname);
+        // 当由用户离开时触发
+        console.log(obj);
+        if(JSON.parse(obj).disconnect){
+            delete user[`${JSON.parse(obj).disconnect}`]
+            all_user.splice(all_user.indexOf(JSON.parse(obj).disconnect),1)
+            wss.clients.forEach(function each(client) {
+                if (client.readyState === WebSocket.OPEN) {
+                    client.send(JSON.stringify(
+                        {
+                            num: JSON.parse(obj).num,
+                            disconnect:JSON.parse(obj).disconnect,
+                            connect:all_user
+                        }));
+                }
+            })
+        }
         // 广播群聊
         if (JSON.parse(obj).object == "群聊") {
             wss.clients.forEach(function each(client) {
